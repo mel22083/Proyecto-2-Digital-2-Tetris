@@ -1,0 +1,113 @@
+#include "esp_mac.h"
+#include <ps5Controller.h>
+
+const char* PS5_MAC = "BC:C7:46:39:99:52";
+
+#define DEBOUNCE_MS  150
+#define REPEAT_MS    80
+
+uint32_t lastLeft   = 0;
+uint32_t lastRight  = 0;
+uint32_t lastDown   = 0;
+uint32_t lastX      = 0;
+uint32_t lastSquare = 0;
+uint32_t lastUp     = 0;
+uint32_t lastR2     = 0;
+
+bool prevX      = false;
+bool prevSquare = false;
+bool prevUp     = false;
+bool prevR2     = false;
+bool prevDown   = false;
+
+bool lastConnected = false;
+
+void enviar(char cmd) {
+    Serial2.write(cmd);
+    Serial.print("Enviado: ");
+    Serial.println(cmd);
+}
+
+void setup() {
+    Serial.begin(115200);
+    Serial2.begin(115200, SERIAL_8N1, 16, 17); // RX=16, TX=17
+    ps5.begin(PS5_MAC);
+    Serial.println("Esperando control PS5...");
+}
+
+void loop() {
+    bool connected = ps5.isConnected();
+
+    if (connected && !lastConnected)
+        Serial.println("Control PS5 CONECTADO");
+    if (!connected && lastConnected)
+        Serial.println("Control PS5 DESCONECTADO");
+    lastConnected = connected;
+
+    if (!connected) {
+        delay(200);
+        return;
+    }
+
+    uint32_t ahora = millis();
+
+    // ── Izquierda — D-pad o joystick ─────────────────────────────────────────
+    bool goLeft = ps5.data.button.left ||
+                  (ps5.LStickX() < -30);
+    if (goLeft && (ahora - lastLeft > REPEAT_MS)) {
+        lastLeft = ahora;
+        enviar('L');
+    }
+    if (!goLeft) lastLeft = 0;
+
+    // ── Derecha — D-pad o joystick ────────────────────────────────────────────
+    bool goRight = ps5.data.button.right ||
+                   (ps5.LStickX() > 30);
+    if (goRight && (ahora - lastRight > REPEAT_MS)) {
+        lastRight = ahora;
+        enviar('R');
+    }
+    if (!goRight) lastRight = 0;
+
+    // ── Abajo — soft drop ─────────────────────────────────────────────────────
+    bool goDown = ps5.data.button.down;
+    if (goDown && (ahora - lastDown > REPEAT_MS)) {
+        lastDown = ahora;
+        enviar('D');
+    }
+    if (!goDown) lastDown = 0;
+
+    // ── X — rotar derecha ─────────────────────────────────────────────────────
+    bool curX = ps5.data.button.cross;
+    if (curX && !prevX && (ahora - lastX > DEBOUNCE_MS)) {
+        lastX = ahora;
+        enviar('X');
+    }
+    prevX = curX;
+
+    // ── Cuadrado — rotar izquierda ────────────────────────────────────────────
+    bool curSquare = ps5.data.button.square;
+    if (curSquare && !prevSquare && (ahora - lastSquare > DEBOUNCE_MS)) {
+        lastSquare = ahora;
+        enviar('Q');
+    }
+    prevSquare = curSquare;
+
+    // ── D-pad arriba — hold ───────────────────────────────────────────────────
+    bool curUp = ps5.data.button.up;
+    if (curUp && !prevUp && (ahora - lastUp > DEBOUNCE_MS)) {
+        lastUp = ahora;
+        enviar('H');
+    }
+    prevUp = curUp;
+
+    // ── R2 — hard drop ────────────────────────────────────────────────────────
+    bool curR2 = (ps5.R2Value() > 100);
+    if (curR2 && !prevR2 && (ahora - lastR2 > DEBOUNCE_MS)) {
+        lastR2 = ahora;
+        enviar('F');
+    }
+    prevR2 = curR2;
+
+    delay(10);
+}
