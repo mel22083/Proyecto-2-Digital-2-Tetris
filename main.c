@@ -83,14 +83,14 @@ const uint16_t coloresPieza[8] = {
 	    0x07E0, 0xF800, 0xFD20, 0x001F
 	};
 
-const int8_t piezas[7][4][4][2] = {
-    {{{0,1},{1,1},{2,1},{3,1}},{{2,0},{2,1},{2,2},{2,3}},{{0,2},{1,2},{2,2},{3,2}},{{1,0},{1,1},{1,2},{1,3}}},
-    {{{0,0},{1,0},{0,1},{1,1}},{{0,0},{1,0},{0,1},{1,1}},{{0,0},{1,0},{0,1},{1,1}},{{0,0},{1,0},{0,1},{1,1}}},
-    {{{0,1},{1,1},{2,1},{1,0}},{{1,0},{1,1},{1,2},{2,1}},{{0,1},{1,1},{2,1},{1,2}},{{1,0},{1,1},{1,2},{0,1}}},
-    {{{1,0},{2,0},{0,1},{1,1}},{{1,0},{1,1},{2,1},{2,2}},{{1,1},{2,1},{0,2},{1,2}},{{0,0},{0,1},{1,1},{1,2}}},
-    {{{0,0},{1,0},{1,1},{2,1}},{{2,0},{1,1},{2,1},{1,2}},{{0,1},{1,1},{1,2},{2,2}},{{1,0},{0,1},{1,1},{0,2}}},
-    {{{0,1},{1,1},{2,1},{2,0}},{{1,0},{1,1},{1,2},{2,2}},{{0,2},{0,1},{1,1},{2,1}},{{0,0},{1,0},{1,1},{1,2}}},
-    {{{0,0},{0,1},{1,1},{2,1}},{{1,0},{2,0},{1,1},{1,2}},{{0,1},{1,1},{2,1},{2,2}},{{1,0},{1,1},{0,2},{1,2}}}
+const int8_t piezas[7][4][4][2] = { // tipo, rotacion, bloque, coordenada
+    {{{0,1},{1,1},{2,1},{3,1}},{{2,0},{2,1},{2,2},{2,3}},{{0,2},{1,2},{2,2},{3,2}},{{1,0},{1,1},{1,2},{1,3}}}, // I
+    {{{0,0},{1,0},{0,1},{1,1}},{{0,0},{1,0},{0,1},{1,1}},{{0,0},{1,0},{0,1},{1,1}},{{0,0},{1,0},{0,1},{1,1}}}, // O
+    {{{0,1},{1,1},{2,1},{1,0}},{{1,0},{1,1},{1,2},{2,1}},{{0,1},{1,1},{2,1},{1,2}},{{1,0},{1,1},{1,2},{0,1}}}, // T
+    {{{1,0},{2,0},{0,1},{1,1}},{{1,0},{1,1},{2,1},{2,2}},{{1,1},{2,1},{0,2},{1,2}},{{0,0},{0,1},{1,1},{1,2}}}, // S
+    {{{0,0},{1,0},{1,1},{2,1}},{{2,0},{1,1},{2,1},{1,2}},{{0,1},{1,1},{1,2},{2,2}},{{1,0},{0,1},{1,1},{0,2}}}, // Z
+    {{{0,1},{1,1},{2,1},{2,0}},{{1,0},{1,1},{1,2},{2,2}},{{0,2},{0,1},{1,1},{2,1}},{{0,0},{1,0},{1,1},{1,2}}}, // J
+    {{{0,0},{0,1},{1,1},{2,1}},{{1,0},{2,0},{1,1},{1,2}},{{0,1},{1,1},{2,1},{2,2}},{{1,0},{1,1},{0,2},{1,2}}}  // L
 };
 typedef enum {
     MENU,
@@ -151,9 +151,9 @@ void crearBloque(int col, int fila, uint16_t color){
 	        return;
 	    }
 	    FillRectFast(px + 1, py + 1, BLOQUE - 2, BLOQUE - 2, color);
-	    H_line(px + 1, py + 1,          BLOQUE - 2, 0xFFFF);
+	    H_line(px + 1, py + 1,          BLOQUE - 2, 0xFFFF); // efecto 3D linea blanca
 	    V_line(px + 1, py + 1,          BLOQUE - 2, 0xFFFF);
-	    H_line(px + 1, py + BLOQUE - 2, BLOQUE - 2, 0x2104);
+	    H_line(px + 1, py + BLOQUE - 2, BLOQUE - 2, 0x2104); // efecto 3D linea oscura
 	    V_line(px + BLOQUE - 2, py + 1, BLOQUE - 2, 0x2104);
 }
 
@@ -292,11 +292,6 @@ void efectoLinea(void) {
     tono(1200, 15);
 }
 
-void efectoGameOver(void) {
-    tono(300, 80);
-    tono(200, 80);
-    tono(100, 100);
-}
 
 // ****************************** FUNCION PARA MOSTRAR LOS CAMBIOS EN EL SCORE VISUALMENTE *****************************
 
@@ -381,12 +376,12 @@ void dibujarPieza(Pieza *p, uint16_t color) {
 
 Pieza nuevaPieza(void) {
     Pieza p;
-    static uint32_t seed = 12345;
-    seed ^= seed << 13;
-    seed ^= seed >> 17;
-    seed ^= seed << 5;
-    seed += HAL_GetTick();
-    p.tipo     = seed % 7;
+    static uint32_t valorRandom = 12345;
+    valorRandom ^= valorRandom << 13;
+    valorRandom ^= valorRandom >> 17;
+    valorRandom ^= valorRandom << 5;
+    valorRandom += HAL_GetTick();
+    p.tipo     = valorRandom % 7;
     p.rotacion = 0;
     p.x        = COLS / 2 - 2;
     p.y        = 0;
@@ -492,7 +487,7 @@ void mostrarMenu(void)
     uint32_t i;
 
     HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_RESET);
-    SetWindows(0, 0, 239, 319);   // 👈 240x320
+    SetWindows(0, 0, 239, 319);
     HAL_GPIO_WritePin(LCD_RS_GPIO_Port, LCD_RS_Pin, GPIO_PIN_SET);
 
     for (i = 0; i < (240 * 320); i++)
@@ -631,7 +626,10 @@ void pantallaGameOver(void) {
 
 void usarHold(void) {
     if (holdUsado) return;
+
+    dibujarGhost(COLOR_VACIO);
     dibujarPieza(&piezaActual, COLOR_VACIO);
+
     if (!holdActivo) {
         holdPieza          = piezaActual;
         holdPieza.rotacion = 0;
@@ -657,6 +655,7 @@ void usarHold(void) {
            return;
         }
         dibujarPieza(&piezaActual, coloresPieza[piezaActual.tipo + 1]);
+        dibujarGhost(0x2104);
     }
 
 // ************************ CALLBACK DEL UART PARA EL CONTROL DE PS5 *********************************************
